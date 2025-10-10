@@ -115,24 +115,24 @@ public class VectorLib : MonoBehaviour
         return Vector3.Dot(a, b) / denom * b;
     }
 
-    /// Rebutjar en 3D
+    ///Rebutjar en 3D
     public static Vector3 Rebutjar(Vector3 a, Vector3 b) => a - Projectar(a, b);
 
-    /// Projeccio d un vector sobre un pla amb normal donada
+    ///Projeccio d un vector sobre un pla amb normal donada
     public static Vector3 ProjectarEnPla(Vector3 vector, Vector3 normalPla)
     {
         Vector3 n = NormalitzarSegur(normalPla, Vector3.up);
         return vector - Vector3.Dot(vector, n) * n;
     }
 
-    /// Reflectir en 3D
+    ///Reflectir en 3D
     public static Vector3 Reflectir(Vector3 vector, Vector3 normal)
     {
         Vector3 n = NormalitzarSegur(normal, Vector3.up);
         return vector - 2f * Vector3.Dot(vector, n) * n;
     }
 
-    /// Angle sense signe entre dos vectors 3D (0..180 graus)
+    ///Angle sense signe entre dos vectors 3D (0..180 graus)
     public static float Angle(Vector3 a, Vector3 b)
     {
         float denomQuad = a.sqrMagnitude * b.sqrMagnitude;
@@ -142,7 +142,7 @@ public class VectorLib : MonoBehaviour
         return ArcCos(cos) * RAD_A_DEG;
     }
 
-    /// Angle amb signe d a fins a b al voltant d un eix (regla ma dreta)
+    ///Angle amb signe d a fins a b al voltant d un eix (regla ma dreta)
     public static float AngleAmbSigneAlVoltantEix(Vector3 a, Vector3 b, Vector3 eix)
     {
         Vector3 eixN = NormalitzarSegur(eix, Vector3.up);
@@ -157,7 +157,7 @@ public class VectorLib : MonoBehaviour
         return ArcTan2(magnitudC * signe, dot) * RAD_A_DEG;
     }
 
-    /// Base ortonormal (tangenta i bitangenta) a partir d una normal
+    ///Base ortonormal (tangenta i bitangenta) a partir d una normal
     public static void BaseOrtonormal(Vector3 normal, out Vector3 tangenta, out Vector3 bitangenta)
     {
         Vector3 n = NormalitzarSegur(normal, Vector3.up);
@@ -167,7 +167,7 @@ public class VectorLib : MonoBehaviour
         bitangenta = Vector3.Cross(n, tangenta);
     }
 
-    /// Limita la magnitud a una longitud maxima
+    ///Limita la magnitud a una longitud maxima
     public static Vector3 LimitarMagnitud(Vector3 vector, float longitudMax)
     {
         if (longitudMax <= 0f) return Vector3.zero;
@@ -181,15 +181,15 @@ public class VectorLib : MonoBehaviour
         return vector;
     }
 
-    /// Producte triple escalar: a . (b x c)
+    ///Producte triple escalar: a . (b x c)
     public static float TripleEscalar(Vector3 a, Vector3 b, Vector3 c)
         => Vector3.Dot(a, Vector3.Cross(b, c));
 
-    /// Area del paralelogram generat per a i b (|a x b|)
+    ///Area del paralelogram generat per a i b (|a x b|)
     public static float AreaParalelogram(Vector3 a, Vector3 b)
         => Raiz(Vector3.Cross(a, b).sqrMagnitude);
 
-    /// Area del triangle generat per a i b (meitat del paralelogram)
+    ///Area del triangle generat per a i b (meitat del paralelogram)
     public static float AreaTriangle(Vector3 a, Vector3 b)
         => 0.5f * AreaParalelogram(a, b);
 }
