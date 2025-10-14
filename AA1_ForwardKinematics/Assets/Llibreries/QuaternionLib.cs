@@ -20,20 +20,20 @@ public class QuaternionLib : MonoBehaviour
     static float Clamp(float v, float min, float max) => v < min ? min : (v > max ? max : v);
     static float Clamp01(float t) => t < 0f ? 0f : (t > 1f ? 1f : t);
 
-    // ---------- BASICS ----------
-    /// Dot product entre dos quaternions
+    //BASICS
+    ///Dot product entre dos quaternions
     public static float Punt(Quaternion a, Quaternion b)
         => a.x * b.x + a.y * b.y + a.z * b.z + a.w * b.w;
 
-    /// Norm quadrada
+    ///Norm quadrada
     public static float NormaQuad(Quaternion q)
         => q.x * q.x + q.y * q.y + q.z * q.z + q.w * q.w;
 
-    /// Norma
+    ///Norma
     public static float Norma(Quaternion q)
         => Sqrt(NormaQuad(q));
 
-    /// Normalitza; si molt petit, retorna identitat
+    ///Normalitza; si molt petit, retorna identitat
     public static Quaternion Normalitzar(Quaternion q)
     {
         float n2 = NormaQuad(q);
@@ -42,11 +42,11 @@ public class QuaternionLib : MonoBehaviour
         return new Quaternion(q.x * inv, q.y * inv, q.z * inv, q.w * inv);
     }
 
-    /// Conjugat
+    ///Conjugat
     public static Quaternion Conjugat(Quaternion q)
         => new Quaternion(-q.x, -q.y, -q.z, q.w);
 
-    /// Inversa (q^-1) = conjugat(q) / |q|^2
+    ///Inversa (q^-1) = conjugat(q) / |q|^2
     public static Quaternion Inversa(Quaternion q)
     {
         float n2 = NormaQuad(q);
@@ -55,7 +55,7 @@ public class QuaternionLib : MonoBehaviour
         return new Quaternion(-q.x * inv, -q.y * inv, -q.z * inv, q.w * inv);
     }
 
-    /// Producte: composa rotacions (primer a, despres b): q = b * a
+    ///Producte: composa rotacions (primer a, despres b): q = b * a
     public static Quaternion Producte(Quaternion b, Quaternion a)
     {
         return new Quaternion(
@@ -66,11 +66,11 @@ public class QuaternionLib : MonoBehaviour
         );
     }
 
-    // ---------- CREACIÓ I DESCOMP. ----------
-    /// Des de eix (unit) i angle en graus
+    //CREACIÓ I DESCOMP.
+    /// Des de eix unit i angle en graus
     public static Quaternion DesDeEixAngle(Vector3 eix, float graus)
     {
-        // normalitzar eix
+        //normalitzar eix
         float m2 = eix.sqrMagnitude;
         Vector3 n = m2 > EPS ? eix / Sqrt(m2) : Vector3.up;
         float h = graus * DEG_A_RAD * 0.5f;
@@ -79,7 +79,7 @@ public class QuaternionLib : MonoBehaviour
         return new Quaternion(n.x * s, n.y * s, n.z * s, c);
     }
 
-    /// A eix-angle (graus). Retorna eix unit i angle en graus.
+    ///A eix-angle (graus). Retorna eix unit i angle en graus.
     public static void A_EixAngle(Quaternion q, out Vector3 eix, out float graus)
     {
         Quaternion u = Normalitzar(q);
@@ -87,7 +87,7 @@ public class QuaternionLib : MonoBehaviour
         float s = Sqrt(MathfMax(0f, 1f - u.w * u.w)); // = sin(ang/2)
         if (s < 1e-6f)
         {
-            // angle ~ 0: eix arbitrary
+            //angle ~ 0: eix arbitrary
             eix = new Vector3(1f, 0f, 0f);
             graus = ang * RAD_A_DEG;
         }
@@ -98,7 +98,7 @@ public class QuaternionLib : MonoBehaviour
         }
     }
 
-    /// Des de Euler XYZ en graus (rotacio al voltant de X, despres Y, despres Z)
+    ///Des de Euler XYZ en graus --> rotacio al voltant de X, despres Y, despres Z
     public static Quaternion DesDeEulerXYZ(float rx, float ry, float rz)
     {
         float hx = rx * DEG_A_RAD * 0.5f;
@@ -109,7 +109,7 @@ public class QuaternionLib : MonoBehaviour
         float cy = Cos(hy), sy = Sin(hy);
         float cz = Cos(hz), sz = Sin(hz);
 
-        // ordre XYZ: q = qz * qy * qx
+        //ordre XYZ: q = qz * qy * qx
         float w = cx * cy * cz - sx * sy * sz;
         float x = sx * cy * cz + cx * sy * sz;
         float y = cx * sy * cz - sx * cy * sz;
@@ -118,7 +118,7 @@ public class QuaternionLib : MonoBehaviour
         return Normalitzar(new Quaternion(x, y, z, w));
     }
 
-    /// A Euler XYZ en graus (atencio a gimbal lock)
+    ///A Euler XYZ en graus (atencio a gimbal lock)
     public static Vector3 A_EulerXYZ(Quaternion q)
     {
         // Matriu de rotacio des de q
@@ -148,11 +148,11 @@ public class QuaternionLib : MonoBehaviour
         return new Vector3(rx * RAD_A_DEG, ry * RAD_A_DEG, rz * RAD_A_DEG);
     }
 
-    // ---------- LOOK ROTATION ----------
+    //LOOK ROTATION
     /// Crea rotacio que mira cap a forward amb up aproximat
     public static Quaternion LookRotation(Vector3 forward, Vector3 up)
     {
-        // normalitzar vectors i construir base ortonormal
+        //normalitzar vectors i construir base ortonormal
         Vector3 f = forward.sqrMagnitude > EPS ? forward / Sqrt(forward.sqrMagnitude) : Vector3.forward;
         Vector3 u = up.sqrMagnitude > EPS ? up / Sqrt(up.sqrMagnitude) : Vector3.up;
 
@@ -160,7 +160,7 @@ public class QuaternionLib : MonoBehaviour
         float r2 = r.sqrMagnitude;
         if (r2 <= EPS)
         {
-            // up quasi paral lel a forward: tria un up diferent
+            //up quasi paral lel a forward: tria un up diferent
             u = Abs(f.y) < 0.999f ? Vector3.up : Vector3.right;
             r = Vector3.Cross(u, f);
             r2 = r.sqrMagnitude;
@@ -169,8 +169,8 @@ public class QuaternionLib : MonoBehaviour
         r /= Sqrt(r2);
         u = Vector3.Cross(f, r);
 
-        // Matriu amb columnes r,u,f
-        // Converteix matriu -> quaternion (branch numeric estable)
+        //matriu amb columnes r,u,f
+        //converteix matriu -> quaternion (branch numeric estable)
         float m00 = r.x, m01 = u.x, m02 = f.x;
         float m10 = r.y, m11 = u.y, m12 = f.y;
         float m20 = r.z, m21 = u.z, m22 = f.z;
@@ -224,8 +224,8 @@ public class QuaternionLib : MonoBehaviour
         return Normalitzar(q);
     }
 
-    // ---------- ROTAR VECTOR ----------
-    /// Rota un vector v amb un quaternion q (metode rapid)
+    //ROTAR VECTOR
+    ///rota un vector v amb un quaternion q (metode rapid)
     public static Vector3 RotarVector(Quaternion q, Vector3 v)
     {
         // v' = v + 2*w*(q.xyz x v) + 2*(q.xyz x (q.xyz x v))
@@ -234,17 +234,17 @@ public class QuaternionLib : MonoBehaviour
         return v + q.w * t + Vector3.Cross(qv, t);
     }
 
-    // ---------- ANGLE ENTRE ----------
-    /// Angle entre dues rotacions (graus)
+    //ANGLE ENTRE
+    ///angle entre dues rotacions (graus)
     public static float AngleEntre(Quaternion a, Quaternion b)
     {
         float d = Clamp(Abs(Punt(a, b)), -1f, 1f);
-        // angle = 2 * acos(|dot|)
+        //angle = 2 * acos(|dot|)
         return 2f * Acos(d) * RAD_A_DEG;
     }
 
-    // ---------- LERP / NLERP / SLERP ----------
-    /// Lerp de quaternions amb cami curt i normalitzacio (equivalent a nlerp clamped)
+    //LERP / NLERP / SLERP
+    ///Lerp de quaternions amb cami curt i normalitzacio (equivalent a nlerp clamped)
     public static Quaternion Lerp(Quaternion inici, Quaternion fi, float t)
     {
         t = Clamp01(t);
