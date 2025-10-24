@@ -238,6 +238,7 @@ GameObject:
   m_Component:
   - component: {fileID: 429237752}
   - component: {fileID: 429237753}
+  - component: {fileID: 429237754}
   m_Layer: 0
   m_Name: GameObject
   m_TagString: Untagged
@@ -267,9 +268,32 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 429237751}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 1218a4d16aa5a0947baa9e9eb935991f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  joint1Sphere: {fileID: 939819141}
+  joint2Sphere: {fileID: 1744908783}
+  joint3Sphere: {fileID: 1890490624}
+  endEffector: {fileID: 363660017}
+  segment1Cube: {fileID: 1805403197}
+  segment2Cube: {fileID: 1101860043}
+  segment3Cube: {fileID: 1243408622}
+  segment1Length: 5
+  segment2Length: 4
+  segment3Length: 2
+  rotationSpeed: 100
+--- !u!114 &429237754
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 429237751}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ec9e90e1747b8654f9ec6737ee88946b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   joint1Sphere: {fileID: 939819141}
