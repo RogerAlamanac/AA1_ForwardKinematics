@@ -1,80 +1,209 @@
 ﻿using UnityEngine;
 
+[ExecuteAlways]
 public class MyRobotController : MonoBehaviour
 {
-    // --- Joints (esferes) ---
-    public GameObject joint1Sphere;
-    public GameObject joint2Sphere;
-    public GameObject joint3Sphere;
-    public GameObject endEffector;
+    [Header("Base del brazo (no parent)")]
+    public Transform baseTarget; // Arrastra aquí tu Cube/anchor
 
-    // --- Segments (cubs visuals) ---
+    // --- Joints (esferas visuales) ---
+    public GameObject joint1Sphere;   // hombro
+    public GameObject joint2Sphere;   // codo
+    public GameObject joint3Sphere;   // muñeca
+    public GameObject endEffector;    // efector final
+
+    // --- Segments (cubos visuales) ---
     public GameObject segment1Cube;
     public GameObject segment2Cube;
     public GameObject segment3Cube;
 
-    // --- Longituds ---
-    public float segment1Length = 2f;
-    public float segment2Length = 1.5f;
-    public float segment3Length = 1f;
+    // --- Longitudes ---
+    [Header("Longitudes")]
+    public float segment1Length = 5f;
+    public float segment2Length = 4f;
+    public float segment3Length = 2f;
 
-    // --- Angles ---
-    private float joint1Yaw = 0f;   // rotació lateral (Y)
-    private float joint1Pitch = 0f; // 🆕 rotació vertical (X)
-    private float joint2 = 0f;      // colze
-    private float joint3 = 0f;      // canell
+    // --- Ángulos objetivo (deg) ---
+    [Header("Ángulos objetivo (deg)")]
+    public float joint1YawTarget = 0f;    // Y global (hombro)
+    public float joint1PitchTarget = 0f;  // X global (hombro)
+    public float joint2Target = 0f;       // X local (codo)
+    public float joint3Target = 0f;       // X local (muñeca)
 
-    public float rotationSpeed = 50f;
+    // --- Estado suavizado (runtime) ---
+    float joint1Yaw, joint1Pitch, joint2, joint3;
+
+    // --- Control / Suavizado ---
+    [Header("Entrada y Suavizado")]
+    public float rotationSpeed = 50f;     // deg/s para flechas
+    [Tooltip("Tiempo característico del filtro exponencial (s). 0 = sin suavizado")]
+    public float smoothTime = 0.1f;
+
+    // --- Límites (puedes ajustar en el Inspector) ---
+    [Header("Límites (deg)")]
+    public Vector2 yawLimits = new Vector2(-180f, 180f);
+    public Vector2 pitchLimits = new Vector2(-40f, 40f);
+    public Vector2 elbowLimits = new Vector2(-120f, 120f);
+    public Vector2 wristLimits = new Vector2(-120f, 120f);
+
+    // --- Selección de joint con 1-3 ---
+    [Header("Selección de Joint")]
+    [SerializeField] int selectedJoint = 1; // 1=hombro, 2=codo, 3=muñeca
+
+    void OnEnable()
+    {
+        SnapRuntimeToTargets();
+        RecomputeAndDraw_EditorSafe();
+    }
+
+    void Start()
+    {
+        if (Application.isPlaying)
+        {
+            SnapRuntimeToTargets();
+            RecomputeAndDraw_EditorSafe();
+        }
+    }
+
+    void OnValidate()
+    {
+        ApplyLimits();               // respeta límites al tocar sliders
+        if (!Application.isPlaying)  // en edición, muestra directamente objetivos
+            SnapRuntimeToTargets();
+        RecomputeAndDraw_EditorSafe();
+    }
 
     void Update()
     {
-        HandleInput();
+        if (!Application.isPlaying)
+        {
+            // En edición: seguir a baseTarget y actualizar pose
+            RecomputeAndDraw_EditorSafe();
+            return;
+        }
+
+        HandleSelectionKeys();  // 1/2/3
+        HandleArrowInput();     // flechas según joint seleccionado
+
+        ApplyLimits();
+        SmoothAngles(Time.deltaTime);
+
         ComputeForwardKinematics();
         UpdateSegments();
     }
 
-    void HandleInput()
+    // ---------- Nuevo esquema de entrada ----------
+    void HandleSelectionKeys()
     {
-        // --- Rotació lateral del "hombro" ---
-        if (Input.GetKey(KeyCode.A)) joint1Yaw -= rotationSpeed * Time.deltaTime;
-        if (Input.GetKey(KeyCode.D)) joint1Yaw += rotationSpeed * Time.deltaTime;
-
-        // --- Rotació vertical del "hombro" ---
-        if (Input.GetKey(KeyCode.W)) joint1Pitch += rotationSpeed * Time.deltaTime;
-        if (Input.GetKey(KeyCode.S)) joint1Pitch -= rotationSpeed * Time.deltaTime;
-
-        // --- Colze ---
-        if (Input.GetKey(KeyCode.Q)) joint2 += rotationSpeed * Time.deltaTime;
-        if (Input.GetKey(KeyCode.E)) joint2 -= rotationSpeed * Time.deltaTime;
-
-        // --- Canell ---
-        if (Input.GetKey(KeyCode.R)) joint3 += rotationSpeed * Time.deltaTime;
-        if (Input.GetKey(KeyCode.F)) joint3 -= rotationSpeed * Time.deltaTime;
+        if (Input.GetKeyDown(KeyCode.Alpha1)) selectedJoint = 1; // hombro (Y+X)
+        if (Input.GetKeyDown(KeyCode.Alpha2)) selectedJoint = 2; // codo (X)
+        if (Input.GetKeyDown(KeyCode.Alpha3)) selectedJoint = 3; // muñeca (X);
     }
 
+    void HandleArrowInput()
+    {
+        float dt = Time.deltaTime;
+        float step = rotationSpeed * dt;
+
+        switch (selectedJoint)
+        {
+            case 1: // Hombro: ←→ yaw, ↑↓ pitch
+                if (Input.GetKey(KeyCode.LeftArrow)) joint1YawTarget -= step;
+                if (Input.GetKey(KeyCode.RightArrow)) joint1YawTarget += step;
+                if (Input.GetKey(KeyCode.UpArrow)) joint1PitchTarget += step;
+                if (Input.GetKey(KeyCode.DownArrow)) joint1PitchTarget -= step;
+                break;
+
+            case 2: // Codo: ↑↓ flexión X
+                if (Input.GetKey(KeyCode.UpArrow)) joint2Target += step;
+                if (Input.GetKey(KeyCode.DownArrow)) joint2Target -= step;
+                break;
+
+            case 3: // Muñeca: ↑↓ flexión X
+                if (Input.GetKey(KeyCode.UpArrow)) joint3Target += step;
+                if (Input.GetKey(KeyCode.DownArrow)) joint3Target -= step;
+                break;
+        }
+    }
+
+    // ---------- Límites / Suavizado ----------
+    void ApplyLimits()
+    {
+        joint1YawTarget   = LerpLib.Retallar(joint1YawTarget,   yawLimits.x,   yawLimits.y);
+        joint1PitchTarget = LerpLib.Retallar(joint1PitchTarget, pitchLimits.x, pitchLimits.y);
+        joint2Target = LerpLib.Retallar(joint2Target, elbowLimits.x, elbowLimits.y);
+        joint3Target = LerpLib.Retallar(joint3Target, wristLimits.x, wristLimits.y);
+    }
+
+    void SmoothAngles(float dt)
+    {
+        if (smoothTime <= 0f)
+        {
+            SnapRuntimeToTargets();
+            return;
+        }
+
+        float t = 1f - Mathf.Exp(-dt / smoothTime);
+        joint1Yaw = LerpLib.LerpAngle(joint1Yaw, joint1YawTarget, t);
+        joint1Pitch = LerpLib.LerpAngle(joint1Pitch, joint1PitchTarget, t);
+        joint2 = LerpLib.LerpAngle(joint2, joint2Target, t);
+        joint3 = LerpLib.LerpAngle(joint3, joint3Target, t);
+    }
+
+    void SnapRuntimeToTargets()
+    {
+        joint1Yaw = joint1YawTarget;
+        joint1Pitch = joint1PitchTarget;
+        joint2 = joint2Target;
+        joint3 = joint3Target;
+    }
+
+    // ---------- Editor-safe update ----------
+    void RecomputeAndDraw_EditorSafe()
+    {
+        if (!Application.isPlaying)
+        {
+            // En edición, dibuja la pose objetivo directamente
+            joint1Yaw = joint1YawTarget;
+            joint1Pitch = joint1PitchTarget;
+            joint2 = joint2Target;
+            joint3 = joint3Target;
+        }
+
+        if (!joint1Sphere || !joint2Sphere || !joint3Sphere || !endEffector ||
+            !segment1Cube || !segment2Cube || !segment3Cube)
+            return;
+
+        ComputeForwardKinematics();
+        UpdateSegments();
+    }
+
+    // ---------- FK + segmentos ----------
     void ComputeForwardKinematics()
     {
-        // Posició base
-        Vector3 joint1Pos = transform.position;
+        Vector3 P0 = baseTarget ? baseTarget.position : transform.position;
 
-        // 🧩 Rotació global del primer segment (Yaw + Pitch)
-        Quaternion rot1 = Quaternion.Euler(joint1Pitch, joint1Yaw, 0);
+        var qZ = QuaternionLib.DesDeEixAngle(Vector3.forward, 0f);
+        var qX = QuaternionLib.DesDeEixAngle(Vector3.right, joint1Pitch);
+        var qY = QuaternionLib.DesDeEixAngle(Vector3.up, joint1Yaw);
+        Quaternion rot1 = QuaternionLib.Producte(qY, QuaternionLib.Producte(qX, qZ));
 
-        Vector3 joint2Pos = joint1Pos + rot1 * Vector3.forward * segment1Length;
+        Vector3 P1 = P0 + (rot1 * Vector3.up) * segment1Length;
 
-        // Rotació del segon segment (colze)
-        Quaternion rot2 = rot1 * Quaternion.Euler(joint2, 0, 0);
-        Vector3 joint3Pos = joint2Pos + rot2 * Vector3.forward * segment2Length;
+        Quaternion colzeLocal = QuaternionLib.DesDeEixAngle(Vector3.right, joint2);
+        Quaternion rot2 = QuaternionLib.Producte(rot1, colzeLocal);
+        Vector3 P2 = P1 + (rot2 * Vector3.up) * segment2Length;
 
-        // Rotació del tercer segment (canell)
-        Quaternion rot3 = rot2 * Quaternion.Euler(joint3, 0, 0);
-        Vector3 endEffectorPos = joint3Pos + rot3 * Vector3.forward * segment3Length;
+        Quaternion canellLocal = QuaternionLib.DesDeEixAngle(Vector3.right, joint3);
+        Quaternion rot3 = QuaternionLib.Producte(rot2, canellLocal);
+        Vector3 P3 = P2 + (rot3 * Vector3.up) * segment3Length;
 
-        // Assignar posicions a les esferes
-        joint1Sphere.transform.position = joint1Pos;
-        joint2Sphere.transform.position = joint2Pos;
-        joint3Sphere.transform.position = joint3Pos;
-        endEffector.transform.position = endEffectorPos;
+        joint1Sphere.transform.position = P0;
+        joint2Sphere.transform.position = P1;
+        joint3Sphere.transform.position = P2;
+        endEffector.transform.position = P3;
+
+        endEffector.transform.rotation = rot3;
     }
 
     void UpdateSegments()
@@ -86,19 +215,18 @@ public class MyRobotController : MonoBehaviour
 
     void PositionSegment(GameObject segment, GameObject startJoint, GameObject endJoint)
     {
-        Vector3 startPos = startJoint.transform.position;
-        Vector3 endPos = endJoint.transform.position;
-        Vector3 midPoint = (startPos + endPos) / 2f;
+        Vector3 a = startJoint.transform.position;
+        Vector3 b = endJoint.transform.position;
+        Vector3 dir = b - a;
 
-        Vector3 dir = endPos - startPos;
-        float length = dir.magnitude;
+        segment.transform.position = (a + b) * 0.5f;
+        float len2 = dir.sqrMagnitude;
 
-        segment.transform.position = midPoint;
-        if (dir != Vector3.zero)
-            segment.transform.rotation = Quaternion.LookRotation(dir);
+        if (len2 > 1e-12f)
+            segment.transform.rotation = QuaternionLib.LookRotation(dir, Vector3.up);
 
-        Vector3 localScale = segment.transform.localScale;
-        localScale.z = length;
-        segment.transform.localScale = localScale;
+        Vector3 s = segment.transform.localScale;
+        s.z = Mathf.Sqrt(len2);
+        segment.transform.localScale = s;
     }
 }
