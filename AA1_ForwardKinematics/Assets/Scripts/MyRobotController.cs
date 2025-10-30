@@ -50,38 +50,8 @@ public class MyRobotController : MonoBehaviour
 	[Header("Selección de Joint")]
 	[SerializeField] int selectedJoint = 1; // 1=hombro, 2=codo, 3=muñeca
 
-	//void OnEnable()
-	//{
-	//    SnapRuntimeToTargets();
-	//    RecomputeAndDraw_EditorSafe();
-	//}
-
-	//void Start()
-	//{
-	//    if (Application.isPlaying)
-	//    {
-	//        SnapRuntimeToTargets();
-	//        RecomputeAndDraw_EditorSafe();
-	//    }
-	//}
-
-	//void OnValidate()
-	//{
-	//    ApplyLimits();               // respeta límites al tocar sliders
-	//    if (!Application.isPlaying)  // en edición, muestra directamente objetivos
-	//        SnapRuntimeToTargets();
-	//    RecomputeAndDraw_EditorSafe();
-	//}
-
 	void Update()
 	{
-		//if (!Application.isPlaying)
-		//{
-		//    // En edición: seguir a baseTarget y actualizar pose
-		//    RecomputeAndDraw_EditorSafe();
-		//    return;
-		//}
-
 		HandleSelectionKeys();  // 1/2/3
 		HandleArrowInput();     // flechas según joint seleccionado
 
@@ -157,26 +127,6 @@ public class MyRobotController : MonoBehaviour
 		joint2 = joint2Target;
 		joint3 = joint3Target;
 	}
-
-	// ---------- Editor-safe update ----------
-	//void RecomputeAndDraw_EditorSafe()
-	//{
-	//    if (!Application.isPlaying)
-	//    {
-	//        // En edición, dibuja la pose objetivo directamente
-	//        joint1Yaw = joint1YawTarget;
-	//        joint1Pitch = joint1PitchTarget;
-	//        joint2 = joint2Target;
-	//        joint3 = joint3Target;
-	//    }
-
-	//    if (!joint1Sphere || !joint2Sphere || !joint3Sphere || !endEffector ||
-	//        !segment1Cube || !segment2Cube || !segment3Cube)
-	//        return;
-
-	//    ComputeForwardKinematics();
-	//    UpdateSegments();
-	//}
 
 	// ---------- FK + segmentos ----------
 	void ComputeForwardKinematics()
