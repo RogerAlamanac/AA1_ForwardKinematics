@@ -1,10 +1,12 @@
+using System;
+using Unity.VisualScripting;
 using UnityEngine;
 
 public class TruckController : MonoBehaviour
 {
     // --- Cos de la camioneta (objecte principal) ---
     public GameObject truckBody;
-
+    
     // --- Rodes independents ---
     public GameObject frontLeftWheel;
     public GameObject frontRightWheel;
@@ -30,6 +32,15 @@ public class TruckController : MonoBehaviour
     private float currentSteer = 0f;
     private float currentSteerVisual = 0f;
 
+    void Start()
+    {
+        // Calcula automàticament els offsets locals segons posicions inicials
+        frontLeftOffset = GetLocalOffset(frontLeftWheel);
+        frontRightOffset = GetLocalOffset(frontRightWheel);
+        rearLeftOffset = GetLocalOffset(rearLeftWheel);
+        rearRightOffset = GetLocalOffset(rearRightWheel);
+    }
+
     void Update()
     {
         HandleInput();
@@ -39,17 +50,30 @@ public class TruckController : MonoBehaviour
 
     void HandleInput()
     {
-        float moveInput = Input.GetAxis("Vertical");
-        float steerInput = Input.GetAxis("Horizontal");
+        float moveInput = 0f;
+        float steerInput = 0f;
 
-        // Acceleració suau (usant la teva LerpLib)
+        // --- Només fletxes per al moviment ---
+        if (Input.GetKey(KeyCode.UpArrow))
+            moveInput = 1f;
+        else if (Input.GetKey(KeyCode.DownArrow))
+            moveInput = -1f;
+
+        // --- Només fletxes per a la direcció ---
+        if (Input.GetKey(KeyCode.RightArrow))
+            steerInput = 1f;
+        else if (Input.GetKey(KeyCode.LeftArrow))
+            steerInput = -1f;
+
+        // --- Acceleració suau ---
         float targetSpeed = moveInput * maxSpeed;
         currentSpeed = LerpLib.Lerp(currentSpeed, targetSpeed, acceleration * Time.deltaTime);
 
-        // Control de direcció suau
+        // --- Direcció suau ---
         float targetSteer = steerInput * steerAngleMax;
         currentSteer = LerpLib.Lerp(currentSteer, targetSteer, steerSmooth * Time.deltaTime);
     }
+
 
     void UpdateBody()
     {
@@ -102,5 +126,17 @@ public class TruckController : MonoBehaviour
             totalRot = QuaternionLib.Producte(baseRot, spinRot);
 
         wheel.transform.rotation = totalRot;
+    }
+
+    Vector3 GetLocalOffset(GameObject wheel)
+    {
+        if (wheel == null) return Vector3.zero;
+
+        // Diferència entre la posició de la roda i la del cos
+        Vector3 worldOffset = wheel.transform.position - truckBody.transform.position;
+
+        // Convertim aquest vector al sistema de coordenades local del cos
+        return worldOffset;
+
     }
 }

@@ -90,6 +90,7 @@ public class MyRobotController : MonoBehaviour
 
 		ComputeForwardKinematics();
 		UpdateSegments();
+		transform.position = baseTarget.position;
 	}
 
 	// ---------- Nuevo esquema de entrada ----------
@@ -108,20 +109,20 @@ public class MyRobotController : MonoBehaviour
 		switch (selectedJoint)
 		{
 			case 1: // Hombro: ←→ yaw, ↑↓ pitch
-				if (Input.GetKey(KeyCode.LeftArrow)) joint1YawTarget -= step;
-				if (Input.GetKey(KeyCode.RightArrow)) joint1YawTarget += step;
-				if (Input.GetKey(KeyCode.UpArrow)) joint1PitchTarget += step;
-				if (Input.GetKey(KeyCode.DownArrow)) joint1PitchTarget -= step;
+				if (Input.GetKey(KeyCode.A)) joint1YawTarget -= step;
+				if (Input.GetKey(KeyCode.D)) joint1YawTarget += step;
+				if (Input.GetKey(KeyCode.W)) joint1PitchTarget += step;
+				if (Input.GetKey(KeyCode.S)) joint1PitchTarget -= step;
 				break;
 
 			case 2: // Codo: ↑↓ flexión X
-				if (Input.GetKey(KeyCode.UpArrow)) joint2Target += step;
-				if (Input.GetKey(KeyCode.DownArrow)) joint2Target -= step;
+				if (Input.GetKey(KeyCode.W)) joint2Target += step;
+				if (Input.GetKey(KeyCode.S)) joint2Target -= step;
 				break;
 
 			case 3: // Muñeca: ↑↓ flexión X
-				if (Input.GetKey(KeyCode.UpArrow)) joint3Target += step;
-				if (Input.GetKey(KeyCode.DownArrow)) joint3Target -= step;
+				if (Input.GetKey(KeyCode.W)) joint3Target += step;
+				if (Input.GetKey(KeyCode.S)) joint3Target -= step;
 				break;
 		}
 	}
