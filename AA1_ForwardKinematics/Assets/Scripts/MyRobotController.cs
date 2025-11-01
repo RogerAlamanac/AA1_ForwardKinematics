@@ -142,8 +142,9 @@ public class MyRobotController : MonoBehaviour
 	void ComputeForwardKinematics()
 	{
 		// P0 = base (sigue al target si está asignado; si no, usa este objeto)
-		Vector3 P0 = baseTarget ? baseTarget.position : transform.position;
-
+		Vector3 P0base = baseTarget ? baseTarget.position : transform.position;
+		Vector3 altura = new Vector3(0, 2.25f, 0);
+		Vector3 P0 = P0base + altura;
 		// Rotación acumulada del 1er eslabón: R_y * R_x (R_z=0)
 		Quaternion qZ = QuaternionLib.DesDeEixAngle(Vector3.forward, 0f);
 		Quaternion qX = QuaternionLib.DesDeEixAngle(Vector3.right, joint1Pitch);

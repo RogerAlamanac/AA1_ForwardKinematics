@@ -40,6 +40,7 @@ public class TruckController : MonoBehaviour
 	// Giro ACUMULADO por rueda (deg)
 	float spinFL = 0f, spinFR = 0f, spinRL = 0f, spinRR = 0f;
 
+
 	void Start()
 	{
 		// Captura offsets locales desde la escena (una vez)
@@ -47,7 +48,7 @@ public class TruckController : MonoBehaviour
 		frontRightOffset = GetLocalOffset(frontRightWheel);
 		rearLeftOffset = GetLocalOffset(rearLeftWheel);
 		rearRightOffset = GetLocalOffset(rearRightWheel);
-	}
+    }
 
 	void Update()
 	{
@@ -94,7 +95,7 @@ public class TruckController : MonoBehaviour
 		}
 
 		// SOLO giramos la carrocería si hay gas (como un coche real)
-		if (moveInputRaw != 0f && System.Math.Abs(currentSpeed) > 0f)
+		if (moveInputRaw != 0f && Math.Abs(currentSpeed) > 0f)
 		{
 			float dirSign = currentSpeed >= 0f ? 1f : -1f;
 			float turnAmount = (currentSteer / steerAngleMax) * rotationSpeed * dirSign * Time.deltaTime;
@@ -103,6 +104,9 @@ public class TruckController : MonoBehaviour
 			truckBody.transform.rotation = QuaternionLib.Producte(qTurn, truckBody.transform.rotation);
 		}
 	}
+
+
+
 
 	// ---------------- Ruedas ----------------
 	void UpdateWheels()
