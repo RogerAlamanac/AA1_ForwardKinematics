@@ -161,48 +161,77 @@ public class MyRobotController : MonoBehaviour
     // ---------- FK ----------
     void ComputeForwardKinematics()
     {
-        // P0 = base (sigue al target si está asignado; si no, usa este objeto)
-        Vector3 P0 = baseTarget ? baseTarget.position : transform.position;
+        // ===== 1) FK en LOCAL DE LA BASE (sin usar rotación del coche aún) =====
+        Vector3 P0_L = Vector3.zero;
 
-        // Rotación acumulada del 1er eslabón: R_y * R_x (R_z=0)
-        Quaternion qZ = QuaternionLib.DesDeEixAngle(Vector3.forward, 0f);
-        Quaternion qX = QuaternionLib.DesDeEixAngle(Vector3.right, joint1Pitch);
-        Quaternion qY = QuaternionLib.DesDeEixAngle(Vector3.up, joint1Yaw);
-        Quaternion rot1 = QuaternionLib.Producte(qY, QuaternionLib.Producte(qX, qZ));
+        // Hombro: yaw (Y) -> pitch (X) en local-base
+        Quaternion qY_L = QuaternionLib.DesDeEixAngle(Vector3.up, joint1Yaw);
+        Quaternion qX_L = QuaternionLib.DesDeEixAngle(Vector3.right, joint1Pitch);
+        Quaternion rot1_L = QuaternionLib.Producte(qY_L, qX_L);
 
-        // P1 = P0 + rot1 * (0,1,0) * L1
-        Vector3 P1 = P0 + (rot1 * Vector3.up) * segment1Length;
+        Vector3 P1_L = P0_L + (rot1_L * Vector3.up) * segment1Length;
 
-        // rot2 = rot1 * R_x(joint2)
-        Quaternion colzeLocal = QuaternionLib.DesDeEixAngle(Vector3.right, joint2);
-        Quaternion rot2 = QuaternionLib.Producte(rot1, colzeLocal);
+        // Codo: pitch sobre X local del eslabón 1
+        Quaternion qElbow_L = QuaternionLib.DesDeEixAngle(Vector3.right, joint2);
+        Quaternion rot2_L = QuaternionLib.Producte(rot1_L, qElbow_L);
+        Vector3 P2_L = P1_L + (rot2_L * Vector3.up) * segment2Length;
 
-        // P2 = P1 + rot2 * (0,1,0) * L2
-        Vector3 P2 = P1 + (rot2 * Vector3.up) * segment2Length;
+        // Muñeca: pitch sobre X local del eslabón 2
+        Quaternion qWrist_L = QuaternionLib.DesDeEixAngle(Vector3.right, joint3);
+        Quaternion rot3_L = QuaternionLib.Producte(rot2_L, qWrist_L);
+        Vector3 P3_L = P2_L + (rot3_L * Vector3.up) * segment3Length;
 
-        // rot3 = rot2 * R_x(joint3)
-        Quaternion canellLocal = QuaternionLib.DesDeEixAngle(Vector3.right, joint3);
-        Quaternion rot3 = QuaternionLib.Producte(rot2, canellLocal);
+        // Efector final: yaw/pitch en local del EE
+        Quaternion eeYawQ_L = QuaternionLib.DesDeEixAngle(Vector3.up, eeYaw);
+        Quaternion eePitchQ_L = QuaternionLib.DesDeEixAngle(Vector3.right, eePitch);
+        Quaternion rotEE_L = QuaternionLib.Producte(rot3_L, QuaternionLib.Producte(eeYawQ_L, eePitchQ_L));
 
-        // P3 = P2 + rot3 * (0,1,0) * L3
-        Vector3 P3 = P2 + (rot3 * Vector3.up) * segment3Length;
+        // ===== 2) PASO A MUNDO APLICANDO LA POSE DE LA BASE (una sola vez) =====
+        Vector3 Pbase = baseTarget ? baseTarget.position : transform.position;
+        Quaternion Rbase = baseTarget ? baseTarget.rotation : transform.rotation;
 
-        // ---- ORIENTACIÓN DEL EFECTOR FINAL ----
-        // Aplicamos Yaw local infinito (← →) y opcionalmente Pitch local del efector
-        Quaternion eeYawQ = QuaternionLib.DesDeEixAngle(Vector3.up, eeYaw);
-        Quaternion eePitchQ = QuaternionLib.DesDeEixAngle(Vector3.right, eePitch);
-        Quaternion rotEE = QuaternionLib.Producte(rot3, QuaternionLib.Producte(eeYawQ, eePitchQ));
+        Vector3 P0_W = Pbase;
+        Vector3 P1_W = Pbase + Rbase * P1_L;
+        Vector3 P2_W = Pbase + Rbase * P2_L;
+        Vector3 P3_W = Pbase + Rbase * P3_L;
 
-        // Colocar joints/efector (visual)
-        if (joint1Sphere) joint1Sphere.transform.position = P0;
-        if (joint2Sphere) joint2Sphere.transform.position = P1;
-        if (joint3Sphere) joint3Sphere.transform.position = P2;
+        Quaternion rot1_W = QuaternionLib.Producte(Rbase, rot1_L);
+        Quaternion rot2_W = QuaternionLib.Producte(Rbase, rot2_L);
+        Quaternion rot3_W = QuaternionLib.Producte(Rbase, rot3_L);
+        Quaternion rotEE_W = QuaternionLib.Producte(Rbase, rotEE_L);
+
+        // ===== 3) Pintado (sólo set de pos/rot, sin jerarquía) =====
+        if (joint1Sphere) joint1Sphere.transform.position = P0_W;
+        if (joint2Sphere) joint2Sphere.transform.position = P1_W;
+        if (joint3Sphere) joint3Sphere.transform.position = P2_W;
         if (endEffector)
         {
-            endEffector.transform.position = P3;
-            endEffector.transform.rotation = rotEE; // orientación acumulada + yaw/pitch del EE
+            endEffector.transform.position = P3_W;
+            endEffector.transform.rotation = rotEE_W; // rota EXACTAMENTE con el coche
         }
     }
+
+    void PositionSegment(GameObject segment, GameObject startJoint, GameObject endJoint)
+    {
+        Vector3 a = startJoint.transform.position;
+        Vector3 b = endJoint.transform.position;
+        Vector3 dir = b - a;
+
+        segment.transform.position = (a + b) * 0.5f;
+
+        float len2 = dir.sqrMagnitude;
+        if (len2 > 1e-12f)
+        {
+            // “Up” del coche para evitar rolls raros
+            Vector3 upRef = baseTarget ? (baseTarget.rotation * Vector3.up) : Vector3.up;
+            segment.transform.rotation = QuaternionLib.LookRotation(dir, upRef);
+        }
+
+        Vector3 s = segment.transform.localScale;
+        s.z = Mathf.Sqrt(len2);
+        segment.transform.localScale = s;
+    }
+
 
     // ---------- Visual de segmentos ----------
     void UpdateSegments()
@@ -215,22 +244,5 @@ public class MyRobotController : MonoBehaviour
 
         if (segment3Cube && joint3Sphere && endEffector)
             PositionSegment(segment3Cube, joint3Sphere, endEffector);
-    }
-
-    void PositionSegment(GameObject segment, GameObject startJoint, GameObject endJoint)
-    {
-        Vector3 a = startJoint.transform.position;
-        Vector3 b = endJoint.transform.position;
-        Vector3 dir = b - a;
-
-        segment.transform.position = (a + b) * 0.5f;
-
-        float len2 = dir.x * dir.x + dir.y * dir.y + dir.z * dir.z;
-        if (len2 > 1e-12f)
-            segment.transform.rotation = QuaternionLib.LookRotation(dir, Vector3.up);
-
-        Vector3 s = segment.transform.localScale;
-        s.z = (float)System.Math.Sqrt(len2);
-        segment.transform.localScale = s;
     }
 }
