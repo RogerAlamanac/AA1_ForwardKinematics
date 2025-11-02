@@ -7,6 +7,8 @@ public class MyRobotController : MonoBehaviour
     public Transform baseTarget; // ancla del camión/vehículo
     [Tooltip("Elevación del punto P0 respecto a la base (en metros)")]
     public float baseHeight = 2.25f;
+    public float baseWidth = 0f;
+
 
     // --- Joints (esferas visuales) ---
     [Header("Joints (visual)")]
@@ -164,7 +166,7 @@ public class MyRobotController : MonoBehaviour
     void ComputeForwardKinematics()
     {
         // 1) FK en local-base (ejes canónicos)
-        Vector3 P0_L = new Vector3(0f, baseHeight, 0f); // altura respecto a la base
+        Vector3 P0_L = new Vector3(0f, baseHeight, baseWidth); // altura respecto a la base
         Quaternion qY_L = QuaternionLib.DesDeEixAngle(Vector3.up, joint1Yaw);
         Quaternion qX_L = QuaternionLib.DesDeEixAngle(Vector3.right, joint1Pitch);
         Quaternion rot1_L = QuaternionLib.Producte(qY_L, qX_L);
