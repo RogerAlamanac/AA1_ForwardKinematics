@@ -8,36 +8,30 @@ public class MagneticGripper : MonoBehaviour
     public Transform magnetPoint;
 
     [Header("Targets")]
-    public LayerMask grabbableMask;          // Capas afectadas
-    public float attractionRange = 3.0f;     // Distancia máxima de atracción
-    public bool requireLineOfSight = true;   // Evitar atraer a través de obstáculos
+    public LayerMask grabbableMask;    
+    public float attractionRange = 3.0f;    
+    public bool requireLineOfSight = true;  
 
     [Header("Modelo de fuerza (usa librerías del proyecto)")]
-    [Tooltip("Aceleración máxima (m/s^2) cuando dist=0. Acelera independiente de la masa.")]
     public float maxAcceleration = 60f;
-
-    [Tooltip("Curva de caída con la distancia: u = 1 - SmootherStep01(dist/range)")]
     public bool useSmootherStep = true;
 
-    [Tooltip("Amortiguación cerca del imán para evitar oscilaciones (0..1)")]
     [Range(0f, 1f)] public float nearDamping = 0.5f;
 
     [Header("Snap / bloqueo")]
     public float snapDistance = 0.08f;
 
-    [Tooltip("Si estaba no cinemático, al agarrar se fuerza isKinematic=true y se restaura al soltar")]
     public bool forceKinematicWhileGrabbed = true;
 
     [Header("Input")]
     public KeyCode attractKey = KeyCode.Space;
 
-    // --- Estado de agarre ---
+
     Rigidbody grabbedRb = null;
     bool prevKinematic = false;
 
-    // >>> offsets para seguir sin heredar escala
-    Vector3 grabbedLocalPos;     // posición relativa al magnetPoint (en coords locales del magnetPoint)
-    Quaternion grabbedLocalRot;  // rotación relativa al magnetPoint
+    Vector3 grabbedLocalPos;   
+    Quaternion grabbedLocalRot;  
 
     void Reset()
     {
@@ -49,29 +43,24 @@ public class MagneticGripper : MonoBehaviour
     {
         if (!magnetPoint) return;
 
-        // Pulsada: atraer o mantener bloqueado
         if (Input.GetKey(attractKey))
         {
             if (grabbedRb == null)
             {
-                // Aún no hay objeto agarrado: atrae; si entra en snapDistance, bloqueará.
                 AttractNearbyAndMaybeGrab();
             }
             else
             {
-                // Ya hay objeto agarrado: seguir al magnetPoint con el offset guardado
                 MaintainGrabbedTransform();
             }
         }
 
-        // Soltada: liberar si hay algo agarrado
         if (Input.GetKeyUp(attractKey))
         {
             if (grabbedRb != null) ReleaseGrabbed();
         }
     }
 
-    // --- SNAP POR CONTACTO ---
     void OnCollisionEnter(Collision collision)
     {
         TrySnapOnContact(collision.rigidbody);
@@ -84,25 +73,22 @@ public class MagneticGripper : MonoBehaviour
 
     void TrySnapOnContact(Rigidbody rb)
     {
-        if (grabbedRb != null) return;                 // ya hay uno
+        if (grabbedRb != null) return;               
         if (!rb) return;
-        if (!Input.GetKey(attractKey)) return;         // exige estar pulsando Space
-        if (rb.transform.IsChildOf(transform)) return; // evitar agarrar partes propias
-        if ((grabbableMask.value & (1 << rb.gameObject.layer)) == 0) return; // fuera de máscara
+        if (!Input.GetKey(attractKey)) return;         
+        if (rb.transform.IsChildOf(transform)) return; 
+        if ((grabbableMask.value & (1 << rb.gameObject.layer)) == 0) return; 
 
         Grab(rb);
     }
 
-    // Mantiene al objeto siguiendo al magnetPoint con el offset memorizado (sin parenting)
     void MaintainGrabbedTransform()
     {
         if (!grabbedRb) return;
 
-        // Pose objetivo en mundo a partir del offset guardado
         Vector3 targetPos = magnetPoint.TransformPoint(grabbedLocalPos);
         Quaternion targetRot = magnetPoint.rotation * grabbedLocalRot;
-
-        // Como está en kinematic, usamos MovePosition/MoveRotation para un seguimiento suave y estable
+   
         grabbedRb.MovePosition(targetPos);
         grabbedRb.MoveRotation(targetRot);
     }
@@ -138,7 +124,7 @@ public class MagneticGripper : MonoBehaviour
                 if (Physics.Raycast(rb.worldCenterOfMass, toMagnet / dist, out rh, dist, ~0, QueryTriggerInteraction.Ignore))
                 {
                     if (rh.collider.transform != col.transform && !rh.collider.transform.IsChildOf(transform))
-                        continue; // sin visión limpia
+                        continue;
                 }
             }
 
@@ -151,14 +137,13 @@ public class MagneticGripper : MonoBehaviour
 
         if (!best) return;
 
-        // Si ya está en distancia de snap -> bloquear inmediatamente (conservando offset mundo)
+  
         if (bestDist <= snapDistance)
         {
             Grab(best);
             return;
         }
 
-        // Si aún está lejos: aplicar fuerza de atracción con amortiguación cercana
         Vector3 toMagnetBest = magnetPoint.position - best.worldCenterOfMass;
         float distBest = toMagnetBest.magnitude;
         Vector3 dir = toMagnetBest / distBest;
@@ -177,7 +162,6 @@ public class MagneticGripper : MonoBehaviour
             best.angularVelocity *= damp;
         }
 
-        // Si tras empujar este frame entra en snap, bloquear (conservando offset mundo)
         if (distBest <= snapDistance)
         {
             Grab(best);
@@ -191,15 +175,14 @@ public class MagneticGripper : MonoBehaviour
         grabbedRb = rb;
         prevKinematic = rb.isKinematic;
 
-        // Guardar offset relativo EN EL INSTANTE DE CONTACTO (sin parentar)
         grabbedLocalPos = magnetPoint.InverseTransformPoint(rb.transform.position);
         grabbedLocalRot = Quaternion.Inverse(magnetPoint.rotation) * rb.transform.rotation;
 
-        // Bloquear física si procede
+        // Bloquear física 
         if (forceKinematicWhileGrabbed)
             rb.isKinematic = true;
 
-        // Reset de velocidades para que no “tire” del imán
+        // Reset de velocidades para que no tire del imán
         rb.velocity = Vector3.zero;
         rb.angularVelocity = Vector3.zero;
     }
@@ -212,7 +195,7 @@ public class MagneticGripper : MonoBehaviour
         if (forceKinematicWhileGrabbed)
             grabbedRb.isKinematic = prevKinematic;
 
-        // Limpiar velocidades (evita “saltos” al soltar)
+        // Limpiar velocidades
         grabbedRb.velocity = Vector3.zero;
         grabbedRb.angularVelocity = Vector3.zero;
 

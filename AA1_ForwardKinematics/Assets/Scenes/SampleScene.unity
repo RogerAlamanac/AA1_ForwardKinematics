@@ -465,6 +465,7 @@ PrefabInstance:
       objectReference: {fileID: 3831827580505511055, guid: 0a669cbc772829b42acaae37e3ffa109, type: 3}
     m_RemovedComponents:
     - {fileID: 406654488547587611, guid: e2c4287a936a99c4d9988378e62d0060, type: 3}
+    - {fileID: 406654488547587609, guid: e2c4287a936a99c4d9988378e62d0060, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents:
@@ -661,7 +662,7 @@ Transform:
   m_GameObject: {fileID: 276766686}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 2.24, z: 0}
-  m_LocalScale: {x: 3, y: 3, z: 3}
+  m_LocalScale: {x: 2, y: 2, z: 2}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
@@ -1476,14 +1477,14 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 939819141}
-  m_LocalRotation: {x: -0, y: -0, z: -0.025880191, w: 0.9996651}
+  m_LocalRotation: {x: 0.018300217, y: -0.70686996, z: -0.018300217, w: 0.70686996}
   m_LocalPosition: {x: 10.787664, y: -6.580868, z: -8.914853}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 1633711193}
   m_RootOrder: -1
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: -2.966}
+  m_LocalEulerAnglesHint: {x: 0, y: -90, z: -2.966}
 --- !u!135 &939819143
 SphereCollider:
   m_ObjectHideFlags: 0
@@ -1661,7 +1662,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   target: {fileID: 93459602}
-  offset: {x: -13, y: 45, z: -38}
+  offset: {x: 0, y: 20, z: -20}
   smoothSpeed: 0.125
 --- !u!1 &1097631192
 GameObject:
@@ -2521,11 +2522,11 @@ MonoBehaviour:
   endEffectorPitchTarget: 0
   rotationSpeed: 100
   smoothTime: 0.1
-  limitYaw: 0
-  yawLimits: {x: -40, y: 40}
-  pitchLimits: {x: -40, y: 40}
-  elbowLimits: {x: -120, y: 120}
-  wristLimits: {x: -120, y: 120}
+  limitYaw: 1
+  shoulderYawLimits: {x: -100, y: 100}
+  shoulderPitchLimits: {x: -40, y: 0}
+  elbowLimits: {x: -90, y: 90}
+  wristLimits: {x: -90, y: 90}
   selectedJoint: 1
 --- !u!1 &1646762577 stripped
 GameObject:
